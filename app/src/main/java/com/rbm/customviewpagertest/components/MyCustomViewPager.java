@@ -1,11 +1,13 @@
 package com.rbm.customviewpagertest.components;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.GestureDetector;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.rbm.customviewpagertest.R;
 import com.rbm.customviewpagertest.listeners.GestureListener;
 
 import java.util.ArrayList;
@@ -30,6 +33,10 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
     private static final int MAX_SCREENS = 3;
     private Context mContext;
     private int mScreenWidth;
+
+    private int monthCounter = 0;
+    private int year = 2017;
+    private String[] months = {"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"};
 
     public MyCustomViewPager(Context context) {
         super(context);
@@ -83,7 +90,7 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
             public boolean onTouch(View view, MotionEvent event) {
                 final int X = (int) event.getRawX();
                 final int Y = (int) event.getRawY();
-                switch (event.getAction() & MotionEvent.ACTION_MASK) {
+               /* switch (event.getAction() & MotionEvent.ACTION_MASK) {
                     case MotionEvent.ACTION_DOWN:
                         RelativeLayout.LayoutParams lParams = (RelativeLayout.LayoutParams) view.getLayoutParams();
                         xDelta = X - lParams.leftMargin;
@@ -106,7 +113,7 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
                         view.setLayoutParams(layoutParams);
                         break;
                 }
-                invalidate();
+                invalidate();*/
 
                 gestureDetector.onTouchEvent(event);
                 return true;
@@ -121,22 +128,17 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
         mScreens = new ArrayList<>();
 
         for (int i = 0; i < data.size(); i++) {
-            TextView textView = new TextView(mContext);
-            textView.setText(data.get(i));
             ViewGroup screen = getScreen(i);
             mScreens.add(screen);
-            screen.addView(textView);
             addView(screen);
         }
 
         setCurrentItem(1, Direction.IDLE);
-
     }
 
     private ViewGroup getScreen(int i) {
-        ViewGroup view = new RelativeLayout(mContext);
+        ViewGroup view = (ViewGroup) LayoutInflater.from(mContext).inflate(R.layout.pager_screen, null);
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(mScreenWidth, ViewGroup.LayoutParams.MATCH_PARENT);
-
         view.setLayoutParams(params);
 
         switch (i) {
@@ -150,6 +152,7 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
                 view.setBackgroundColor(Color.GREEN);
                 break;
         }
+
         return view;
     }
 
@@ -164,12 +167,6 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
     public void onGoLeft(float v) {
         setCurrentItem(mCurrentPage - 1, Direction.LEFT);
     }
-
-
-    private void checkScroll(float x) {
-
-    }
-
 
     private int mCurrentPage;
 
@@ -207,31 +204,46 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
         setLayoutParams(params);
         invalidate();
 
+
         switch (direction) {
             case LEFT:
-
+                monthCounter--;
+                //Managing the limits and changing the year
+                if(monthCounter<0) {
+                    monthCounter = months.length - 1;
+                    year--;
+                }
                 ViewGroup lastScreen = mScreens.get(2);
                 mScreens.remove(lastScreen);
                 mScreens.add(0, lastScreen);
 
                 removeAllViews();
-                for(ViewGroup v : mScreens){
+                for (ViewGroup v : mScreens) {
                     addView(v);
                 }
                 setCurrentItem(1, Direction.IDLE);
                 break;
             case RIGHT:
+                monthCounter++;
+                //Managing the limits and changing the year
+                if(monthCounter>11) {
+                    monthCounter = 0;
+                    year++;
+                }
                 ViewGroup firstScreen = mScreens.get(0);
                 mScreens.remove(firstScreen);
                 mScreens.add(2, firstScreen);
 
                 removeAllViews();
-                for(ViewGroup v : mScreens){
+                for (ViewGroup v : mScreens) {
                     addView(v);
                 }
                 setCurrentItem(1, Direction.IDLE);
                 break;
         }
+
+        ((TextView) mScreens.get(1).findViewById(R.id.month)).setText( months[monthCounter] + " "+year);
+
     }
 
     private enum Direction {
