@@ -1,7 +1,6 @@
 package com.rbm.customviewpagertest.components;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.util.AttributeSet;
@@ -12,6 +11,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.Transformation;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -28,7 +29,6 @@ import java.util.ArrayList;
 
 public class MyCustomViewPager extends LinearLayout implements GestureListener.GestureEventListener {
 
-    private ArrayList<String> mData;
     private ArrayList<ViewGroup> mScreens;
     private static final int MAX_SCREENS = 3;
     private Context mContext;
@@ -58,7 +58,6 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
 
     private void init() {
         setUpLayoutParams();
-        mData = new ArrayList<>();
         setUpGestureListner();
     }
 
@@ -88,9 +87,14 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
 
             @Override
             public boolean onTouch(View view, MotionEvent event) {
+
+                if (gestureDetector.onTouchEvent(event)) {
+                    return true;
+                }
+
                 final int X = (int) event.getRawX();
                 final int Y = (int) event.getRawY();
-               /* switch (event.getAction() & MotionEvent.ACTION_MASK) {
+                switch (event.getAction() & MotionEvent.ACTION_MASK) {
                     case MotionEvent.ACTION_DOWN:
                         RelativeLayout.LayoutParams lParams = (RelativeLayout.LayoutParams) view.getLayoutParams();
                         xDelta = X - lParams.leftMargin;
@@ -113,21 +117,17 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
                         view.setLayoutParams(layoutParams);
                         break;
                 }
-                invalidate();*/
+                invalidate();
 
-                gestureDetector.onTouchEvent(event);
                 return true;
             }
-
-
         });
     }
 
-    public void setData(ArrayList<String> data) {
-        mData = data;
+    public void setData() {
         mScreens = new ArrayList<>();
 
-        for (int i = 0; i < data.size(); i++) {
+        for (int i = 0; i < MAX_SCREENS; i++) {
             ViewGroup screen = getScreen(i);
             mScreens.add(screen);
             addView(screen);
@@ -143,16 +143,15 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
 
         switch (i) {
             case 0:
-                view.setBackgroundColor(Color.RED);
+                view.setBackgroundColor(Color.MAGENTA);
                 break;
             case 1:
                 view.setBackgroundColor(Color.BLUE);
                 break;
             case 2:
-                view.setBackgroundColor(Color.GREEN);
+                view.setBackgroundColor(Color.GRAY);
                 break;
         }
-
         return view;
     }
 
@@ -196,24 +195,28 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
         }
     }
 
-
     private void setCurrentItem(int i, Direction direction) {
         mCurrentPage = i;
-        RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) getLayoutParams();
-        params.leftMargin = -(mScreenWidth * i);
-        setLayoutParams(params);
-        invalidate();
 
+        final int newLeftMargin = -(mScreenWidth * i);
 
         switch (direction) {
+            case IDLE:
+                RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) getLayoutParams();
+                params.leftMargin = newLeftMargin;
+                setLayoutParams(params);
+                ((TextView) mScreens.get(i).findViewById(R.id.month)).setText(months[monthCounter] + " " + year);
+                break;
             case LEFT:
                 monthCounter--;
                 //Managing the limits and changing the year
-                if(monthCounter<0) {
+                if (monthCounter < 0) {
                     monthCounter = months.length - 1;
                     year--;
                 }
                 ViewGroup lastScreen = mScreens.get(2);
+                ((TextView) lastScreen.findViewById(R.id.month)).setText(months[monthCounter] + " " + year);
+
                 mScreens.remove(lastScreen);
                 mScreens.add(0, lastScreen);
 
@@ -226,11 +229,12 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
             case RIGHT:
                 monthCounter++;
                 //Managing the limits and changing the year
-                if(monthCounter>11) {
+                if (monthCounter > 11) {
                     monthCounter = 0;
                     year++;
                 }
                 ViewGroup firstScreen = mScreens.get(0);
+                ((TextView) firstScreen.findViewById(R.id.month)).setText(months[monthCounter] + " " + year);
                 mScreens.remove(firstScreen);
                 mScreens.add(2, firstScreen);
 
@@ -239,12 +243,32 @@ public class MyCustomViewPager extends LinearLayout implements GestureListener.G
                     addView(v);
                 }
                 setCurrentItem(1, Direction.IDLE);
+               // animateTransition(-mScreenWidth);
+
                 break;
         }
 
-        ((TextView) mScreens.get(1).findViewById(R.id.month)).setText( months[monthCounter] + " "+year);
+
 
     }
+
+    Animation mAnimation;
+
+    private void animateTransition(final int sourcePoint) {
+        if (mAnimation != null)
+            mAnimation.cancel();
+        mAnimation = new Animation() {
+            @Override
+            protected void applyTransformation(float interpolatedTime, Transformation t) {
+                RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) getLayoutParams();
+                params.leftMargin = (int) (sourcePoint * interpolatedTime);
+                setLayoutParams(params);
+            }
+        };
+        mAnimation.setDuration(3000); // in ms
+        startAnimation(mAnimation);
+    }
+
 
     private enum Direction {
         LEFT,

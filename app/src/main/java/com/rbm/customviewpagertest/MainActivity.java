@@ -16,13 +16,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         MyCustomViewPager myCustomViewPager = (MyCustomViewPager)findViewById(R.id.custom_vp);
-
-        ArrayList<String> data = new ArrayList<>();
-        data.add("Page 1");
-        data.add("Page 2");
-        data.add("Page 3");
-
-        myCustomViewPager.setData(data);
+        myCustomViewPager.setData();
 
 
     }
